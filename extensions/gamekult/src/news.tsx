@@ -6,14 +6,14 @@ import Parser, { Enclosure, Item } from "rss-parser";
 export const websiteUrl = "https://www.gamekult.com";
 
 /** Enum to determine where stores the news. */
-enum Days {
-  Today = "Aujourd'hui",
-  Yesterday = "Hier",
-  Before = "Précédent",
+enum ListSection {
+  Today,
+  Yesterday,
+  Before,
 }
 
 /** Type that describes an object of date and news items. */
-type ItemsByDays = Record<Days, Item[]>;
+type ItemsByDays = Record<ListSection, Item[]>;
 
 /** Interface that describes the news state. */
 interface NewsState {
@@ -31,7 +31,7 @@ interface NewsDetailsProps {
 }
 
 export default function Command() {
-  const initialItemsState = { [Days.Today]: [], [Days.Yesterday]: [], [Days.Before]: [] };
+  const initialItemsState = { [ListSection.Today]: [], [ListSection.Yesterday]: [], [ListSection.Before]: [] };
   const [state, setState] = useState<NewsState>({
     items: initialItemsState,
     isLoading: true,
@@ -55,13 +55,13 @@ export default function Command() {
           const date = new Date(current.isoDate || "");
           const day = date.getDate();
 
-          // Insert the news...
+          // Insert the news in the corresponding section.
           if (todayDayNumber === day) {
-            previous[Days.Today].push(current);
+            previous[ListSection.Today].push(current);
           } else if (todayDayNumber - 1 === day || (todayDayNumber === 1 && yesterdayDayNumber === day)) {
-            previous[Days.Yesterday].push(current);
+            previous[ListSection.Yesterday].push(current);
           } else {
-            previous[Days.Before].push(current);
+            previous[ListSection.Before].push(current);
           }
 
           return previous;
@@ -90,9 +90,28 @@ export default function Command() {
   return (
     <List isLoading={state.isLoading} searchBarPlaceholder="Filter Gamekult news...">
       {Object.entries(state.items).map((data) => {
-        const [day, items] = data;
+        const [listSection, items] = data;
 
         if (!items.length) return null;
+
+        // Create the title for the list section.
+        let day = "Aujourd'hui";
+
+        if (listSection === "1") {
+          day = "Hier";
+        } else if (listSection == "2") {
+          const date = new Date(Date.parse(items[0].isoDate || new Date().toLocaleDateString("en-US")));
+
+          day =
+            date.toLocaleDateString("fr-FR", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }) + " et avant";
+
+          day = day.charAt(0).toUpperCase() + day.slice(1);
+        }
 
         return (
           <List.Section key={day} title={day}>
